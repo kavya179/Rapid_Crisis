@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🆘 SOS — CrisisCore</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/main.css">
+<style>
+  body { background: radial-gradient(ellipse at center, #1a0505, var(--bg-void)); }
+
+  .sos-page {
+    display: flex; flex-direction: column; align-items: center;
+    padding: 32px 24px 60px; min-height: calc(100vh - 120px);
+  }
+
+  /* ── Big SOS Warning ── */
+  .sos-warning {
+    background: rgba(255,45,45,0.1); border: 1px solid rgba(255,45,45,0.4);
+    border-radius: var(--radius-lg); padding: 16px 28px;
+    font-family: var(--font-mono); font-size: 13px; color: var(--red);
+    margin-bottom: 36px; text-align: center;
+    max-width: 600px; width: 100%;
+    animation: warning-pulse 2s ease infinite;
+  }
+  @keyframes warning-pulse {
+    0%,100% { border-color: rgba(255,45,45,0.4); box-shadow: none; }
+    50% { border-color: rgba(255,45,45,0.8); box-shadow: 0 0 20px rgba(255,45,45,0.2); }
+  }
+
+  /* ── MEGA SOS Button ── */
+  .sos-circle-container {
+    position: relative; display: flex; align-items: center; justify-content: center;
+    width: 360px; height: 360px; margin-bottom: 48px;
+    flex-shrink: 0;
+  }
+  .sos-ring {
+    position: absolute; border-radius: 50%;
+    border: 2px solid rgba(255,45,45,0.35);
+    animation: sos-ring-expand 2.5s ease-out infinite;
+  }
+  .sos-ring:nth-child(1) { width: 100%; height: 100%; animation-delay: 0s; }
+  .sos-ring:nth-child(2) { width: 80%; height: 80%; animation-delay: 0.6s; }
+  .sos-ring:nth-child(3) { width: 62%; height: 62%; animation-delay: 1.2s; }
+  @keyframes sos-ring-expand {
+    0% { transform: scale(1); opacity: 0.7; }
+    100% { transform: scale(1.35); opacity: 0; }
+  }
+
+  .sos-btn-main {
+    position: relative; z-index: 10;
+    width: 220px; height: 220px; border-radius: 50%;
+    border: 4px solid var(--red);
+    background: radial-gradient(circle, rgba(255,45,45,0.35), rgba(255,45,45,0.06));
+    cursor: pointer;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px;
+    color: var(--red);
+    font-family: var(--font-display); font-size: 28px; font-weight: 700; letter-spacing: 5px;
+    transition: all 0.2s;
+    box-shadow: 0 0 50px rgba(255,45,45,0.4), inset 0 0 40px rgba(255,45,45,0.08);
+  }
+  .sos-btn-main:hover, .sos-btn-main:active {
+    transform: scale(0.96);
+    background: radial-gradient(circle, rgba(255,45,45,0.55), rgba(255,45,45,0.15));
+    box-shadow: 0 0 80px rgba(255,45,45,0.7), inset 0 0 40px rgba(255,45,45,0.1);
+  }
+  .sos-main-icon { font-size: 60px; line-height: 1; }
+  .sos-btn-label { font-size: 32px; font-weight: 700; letter-spacing: 6px; }
+  .sos-btn-sub { font-size: 11px; letter-spacing: 3px; opacity: 0.7; font-family: var(--font-mono); }
+
+  /* ── Two column layout below button ── */
+  .sos-lower-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 20px;
+    max-width: 900px; width: 100%; margin-bottom: 24px;
+  }
+  @media (max-width: 700px) { .sos-lower-grid { grid-template-columns: 1fr; } .sos-circle-container { width: 280px; height: 280px; } .sos-btn-main { width: 170px; height: 170px; } .sos-btn-label { font-size: 24px; } .sos-main-icon { font-size: 46px; } }
+
+  /* ── Do's & Don'ts ── */
+  .dos-donts-section {
+    background: var(--bg-panel); border: 1px solid var(--border);
+    border-radius: var(--radius-lg); overflow: hidden;
+  }
+  .dos-donts-header {
+    padding: 14px 20px; border-bottom: 1px solid var(--border);
+    font-family: var(--font-display); font-size: 14px; font-weight: 700;
+    letter-spacing: 2px; text-transform: uppercase;
+  }
+  .dos-header { background: rgba(0,230,118,0.07); color: var(--green); border-color: rgba(0,230,118,0.2); }
+  .donts-header { background: rgba(255,45,45,0.07); color: var(--red); border-color: rgba(255,45,45,0.2); }
+  .dos-donts-list { padding: 16px 20px; display: flex; flex-direction: column; gap: 10px; }
+  .dos-item, .donts-item {
+    display: flex; align-items: flex-start; gap: 10px;
+    font-size: 13px; line-height: 1.5; color: var(--text-secondary);
+    padding: 10px 14px; border-radius: var(--radius);
+  }
+  .dos-item { background: rgba(0,230,118,0.05); border: 1px solid rgba(0,230,118,0.15); }
+  .donts-item { background: rgba(255,45,45,0.05); border: 1px solid rgba(255,45,45,0.15); }
+  .dos-item .item-icon { color: var(--green); font-size: 16px; flex-shrink: 0; margin-top: 1px; }
+  .donts-item .item-icon { color: var(--red); font-size: 16px; flex-shrink: 0; margin-top: 1px; }
+
+  /* ── Quick Form ── */
+  .sos-form-section {
+    background: var(--bg-panel); border: 1px solid var(--border);
+    border-radius: var(--radius-lg); padding: 24px;
+    grid-column: span 2;
+    max-width: 900px; width: 100%;
+  }
+  .sos-form-title {
+    font-family: var(--font-display); font-size: 16px; font-weight: 700;
+    letter-spacing: 2px; margin-bottom: 16px; color: var(--text-secondary);
+    text-transform: uppercase;
+  }
+
+  /* ── Emergency Numbers ── */
+  .emergency-numbers {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;
+    max-width: 900px; width: 100%; margin-top: 8px;
+  }
+  .emg-card {
+    background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: var(--radius-lg); padding: 18px; text-align: center;
+    transition: all 0.2s; cursor: default;
+  }
+  .emg-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-glow); }
+  .emg-icon { font-size: 28px; margin-bottom: 6px; }
+  .emg-label { font-family: var(--font-display); font-size: 13px; font-weight: 700; letter-spacing: 1px; }
+  .emg-num { font-family: var(--font-mono); font-size: 18px; margin-top: 4px; color: var(--text-primary); }
+
+  /* Success Overlay */
+  .sos-success-overlay {
+    position: fixed; inset: 0; z-index: 999;
+    background: rgba(0,0,0,0.92);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 16px;
+  }
+  .sos-success-icon { font-size: 90px; animation: sos-success-pop 0.5s ease; }
+  @keyframes sos-success-pop { from { transform: scale(0); } to { transform: scale(1); } }
+  .sos-success-msg {
+    font-family: var(--font-display); font-size: 32px; font-weight: 700;
+    color: var(--red); letter-spacing: 4px; text-align: center;
+  }
+  .sos-success-sub { font-family: var(--font-mono); font-size: 14px; color: var(--text-secondary); text-align: center; }
+  .sos-countdown { font-family: var(--font-display); font-size: 56px; font-weight: 700; color: var(--green); }
+</style>
+</head>
+<body>
+<div class="bg-grid"></div>
+<div class="scanline"></div>
+<div id="alertBanner" class="alert-banner hidden"><span class="alert-pulse"></span><span id="alertText"></span><button onclick="dismissAlert()">✕</button></div>
+<nav class="navbar">
+  <div class="nav-brand">
+    <div class="brand-icon"><svg width="28" height="28" viewBox="0 0 28 28" fill="none"><polygon points="14,2 26,8 26,20 14,26 2,20 2,8" stroke="#ff3c3c" stroke-width="2" fill="none"/><line x1="14" y1="8" x2="14" y2="16" stroke="#ff3c3c" stroke-width="2.5"/><circle cx="14" cy="19" r="1.5" fill="#ff3c3c"/></svg></div>
+    <div><div class="brand-name">CRISIS<span>CORE</span></div><div class="brand-sub">Hospitality Emergency Command</div></div>
+  </div>
+  <div class="nav-links">
+    <a href="index.html" class="nav-link">Dashboard</a>
+    <a href="incidents.html" class="nav-link">Incidents</a>
+    <a href="responders.html" class="nav-link">Responders</a>
+    <a href="report.html" class="nav-link">Report</a>
+    <a href="sos.html" class="nav-link sos-link active">SOS</a>
+    <a href="map.html" class="nav-link">Map</a>
+    <a href="login.html" class="nav-link">Admin</a>
+  </div>
+  <div class="nav-status">
+    <div class="status-dot" id="systemStatus"></div>
+    <span id="systemStatusText">SYSTEM ONLINE</span>
+    <div class="alert-bell" onclick="toggleAlerts()">🔔 <span id="alertCount" class="alert-badge">0</span></div>
+    <div class="live-time" id="liveTime"></div>
+  </div>
+</nav>
+<div id="alertDropdown" class="alert-dropdown hidden"><div class="alert-dd-header"><span>Live Alerts</span><button onclick="markAllRead()">Mark all read</button></div><div id="alertList"></div></div>
+
+<main class="main-content sos-page">
+
+  <!-- Warning Banner -->
+  <div class="sos-warning">
+    ⚠️ USE ONLY IN GENUINE EMERGENCIES — Pressing SOS will immediately alert ALL available responders and log a critical incident
+  </div>
+
+  <!-- MEGA SOS Button -->
+  <div class="sos-circle-container">
+    <div class="sos-ring"></div>
+    <div class="sos-ring"></div>
+    <div class="sos-ring"></div>
+    <button class="sos-btn-main" id="sosMainBtn" onclick="triggerSOS()">
+      <div class="sos-main-icon">🆘</div>
+      <div class="sos-btn-label">SOS</div>
+      <div class="sos-btn-sub">TAP TO ALERT</div>
+    </button>
+  </div>
+
+  <!-- Do's & Don'ts + Form -->
+  <div class="sos-lower-grid">
+
+    <!-- DO's -->
+    <div class="dos-donts-section">
+      <div class="dos-donts-header dos-header">✅ WHAT TO DO</div>
+      <div class="dos-donts-list">
+        <div class="dos-item">
+          <span class="item-icon">✔</span>
+          <span>Stay calm and press SOS only once — multiple presses create duplicate alerts</span>
+        </div>
+        <div class="dos-item">
+          <span class="item-icon">✔</span>
+          <span>Fill in your location and room number so responders can find you quickly</span>
+        </div>
+        <div class="dos-item">
+          <span class="item-icon">✔</span>
+          <span>Move to a safe area while waiting for help to arrive</span>
+        </div>
+        <div class="dos-item">
+          <span class="item-icon">✔</span>
+          <span>Keep your phone accessible so responders can call you back</span>
+        </div>
+        <div class="dos-item">
+          <span class="item-icon">✔</span>
+          <span>Follow evacuation routes if there is fire, gas leak, or structural danger</span>
+        </div>
+        <div class="dos-item">
+          <span class="item-icon">✔</span>
+          <span>Call national emergency services (100/101/108) in parallel for life-threatening situations</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- DON'Ts -->
+    <div class="dos-donts-section">
+      <div class="dos-donts-header donts-header">❌ WHAT NOT TO DO</div>
+      <div class="dos-donts-list">
+        <div class="donts-item">
+          <span class="item-icon">✖</span>
+          <span>Do NOT press SOS for non-emergencies or to test the system — it triggers a full response</span>
+        </div>
+        <div class="donts-item">
+          <span class="item-icon">✖</span>
+          <span>Do NOT leave the area without telling a responder — they will be searching for you</span>
+        </div>
+        <div class="donts-item">
+          <span class="item-icon">✖</span>
+          <span>Do NOT use elevators during fire or earthquake — use stairs only</span>
+        </div>
+        <div class="donts-item">
+          <span class="item-icon">✖</span>
+          <span>Do NOT attempt to fight fire, subdue an attacker, or handle hazmat yourself</span>
+        </div>
+        <div class="donts-item">
+          <span class="item-icon">✖</span>
+          <span>Do NOT block corridors or exits — keep pathways clear for emergency teams</span>
+        </div>
+        <div class="donts-item">
+          <span class="item-icon">✖</span>
+          <span>Do NOT dismiss or close the SOS alert screen until help has confirmed arrival</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Quick Form -->
+    <div class="sos-form-section">
+      <div class="sos-form-title">⚡ QUICK DETAILS <span style="font-size:12px;opacity:0.6;">(Optional but speeds up response)</span></div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Emergency Type</label>
+          <select class="form-select" id="sosType">
+            <option value="emergency">General Emergency</option>
+            <option value="medical">Medical Emergency</option>
+            <option value="fire">Fire</option>
+            <option value="security">Security Threat</option>
+            <option value="evacuation">Evacuation Required</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Room Number</label>
+          <input type="text" id="sosRoom" class="form-input" placeholder="e.g. 305">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Your Location *</label>
+          <input type="text" id="sosLocation" class="form-input" placeholder="Lobby / Room 305 / Pool…">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Your Name</label>
+          <input type="text" id="sosName" class="form-input" placeholder="Optional">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Phone</label>
+          <input type="tel" id="sosPhone" class="form-input" placeholder="Optional">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Brief Description</label>
+          <input type="text" id="sosDesc" class="form-input" placeholder="What is happening?">
+        </div>
+      </div>
+      <!-- Media Upload -->
+      <div class="form-group">
+        <label class="form-label">📎 Attach Photo / Video (Optional)</label>
+        <div class="media-upload-zone" id="mediaUploadZone" onclick="document.getElementById('mediaFileInput').click()">
+          <div class="media-upload-icon">📷</div>
+          <div class="media-upload-text">Tap to attach photo or video evidence</div>
+          <div class="media-upload-sub">Supports JPG, PNG, MP4 — Max 20MB</div>
+          <div id="mediaPreview" class="media-preview"></div>
+        </div>
+        <input type="file" id="mediaFileInput" accept="image/*,video/*" multiple style="display:none" onchange="handleMediaSelect(event)">
+      </div>
+    </div>
+  </div>
+
+  <!-- Emergency Numbers -->
+  <div class="emergency-numbers">
+    <div class="emg-card">
+      <div class="emg-icon">🚒</div>
+      <div class="emg-label" style="color:var(--orange);">FIRE</div>
+      <div class="emg-num">101</div>
+    </div>
+    <div class="emg-card">
+      <div class="emg-icon">🚑</div>
+      <div class="emg-label" style="color:var(--red);">AMBULANCE</div>
+      <div class="emg-num">108</div>
+    </div>
+    <div class="emg-card">
+      <div class="emg-icon">🚔</div>
+      <div class="emg-label" style="color:var(--cyan);">POLICE</div>
+      <div class="emg-num">100</div>
+    </div>
+  </div>
+
+</main>
+
+<!-- SOS Success Overlay -->
+<div id="sosOverlay" class="sos-success-overlay hidden">
+  <div class="sos-success-icon">🆘</div>
+  <div class="sos-success-msg">SOS SIGNAL SENT!</div>
+  <div class="sos-success-sub">All available responders have been alerted.<br>Help is on the way. Stay calm.</div>
+  <div class="sos-countdown" id="sosCountdown">5</div>
+  <div style="font-family:var(--font-mono);font-size:12px;color:var(--text-dim);">Redirecting to incident…</div>
+  <button class="btn btn-outline" onclick="document.getElementById('sosOverlay').classList.add('hidden')" style="margin-top:8px;">Stay on Page</button>
+</div>
+
+<footer class="footer">
+  <div class="footer-left"><span class="brand-name">CRISIS<span>CORE</span></span> — Emergency SOS</div>
+  <div class="footer-right"><span class="footer-badge">📡 Direct Alert</span><span id="offlineBadge" class="footer-badge" style="display:none;border-color:rgba(255,210,10,0.4);color:var(--yellow);">⚠️ OFFLINE MODE</span></div>
+</footer>
+
+<script src="js/api.js"></script>
+<script src="js/offline.js"></script>
+<script>
+let sosSending = false;
+let selectedFiles = [];
+
+function handleMediaSelect(event) {
+  selectedFiles = Array.from(event.target.files);
+  const preview = document.getElementById('mediaPreview');
+  preview.innerHTML = selectedFiles.map(f => `
+    <div class="media-chip">
+      ${f.type.startsWith('video') ? '🎥' : '📷'} ${f.name} <span style="opacity:0.5;">(${(f.size/1024/1024).toFixed(1)}MB)</span>
+    </div>
+  `).join('');
+}
+
+async function triggerSOS() {
+  if (sosSending) return;
+  const location = document.getElementById('sosLocation').value.trim() || 'Unknown Location';
+  const type = document.getElementById('sosType').value;
+  const room_number = document.getElementById('sosRoom').value.trim();
+  const name = document.getElementById('sosName').value.trim() || 'Guest';
+  const phone = document.getElementById('sosPhone').value.trim();
+  const desc = document.getElementById('sosDesc').value.trim();
+
+  sosSending = true;
+  const btn = document.getElementById('sosMainBtn');
+  btn.style.opacity = '0.6';
+  btn.innerHTML = '<div style="font-size:40px;">📡</div><div style="font-size:20px;letter-spacing:4px;">SENDING…</div>';
+
+  const payload = { location, type, room_number, name, phone, description: desc };
+
+  try {
+    const res = await API.sos(payload);
+    showSOSSuccess(res.incident_id);
+  } catch(e) {
+    // Save offline if backend down
+    if (typeof saveOfflineSOS === 'function') saveOfflineSOS(payload);
+    showToast('⚠️ Backend offline — SOS saved locally! Call 100/101/108 directly.', 'error');
+    btn.style.opacity = '1';
+    btn.innerHTML = '<div class="sos-main-icon">🆘</div><div class="sos-btn-label">SOS</div><div class="sos-btn-sub">TAP TO ALERT</div>';
+    sosSending = false;
+  }
+}
+
+function showSOSSuccess(incidentId) {
+  const overlay = document.getElementById('sosOverlay');
+  overlay.classList.remove('hidden');
+  let count = 5;
+  const countdown = document.getElementById('sosCountdown');
+  const interval = setInterval(() => {
+    count--;
+    countdown.textContent = count;
+    if (count <= 0) {
+      clearInterval(interval);
+      window.location.href = `incident-detail.html?id=${incidentId}`;
+    }
+  }, 1000);
+}
+</script>
+</body>
+</html>

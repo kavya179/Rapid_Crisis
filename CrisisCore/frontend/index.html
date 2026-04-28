@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CrisisCore — Hospitality Emergency Command</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/main.css">
+<style>
+  /* Fixes the grid to hold 5 buttons instead of 4 on desktop */
+  @media (min-width: 901px) {
+    .action-grid { grid-template-columns: repeat(5, 1fr) !important; }
+  }
+</style>
+</head>
+<body>
+<div class="bg-grid"></div>
+<div class="scanline"></div>
+
+<div id="alertBanner" class="alert-banner hidden">
+  <span class="alert-pulse"></span>
+  <span id="alertText">Critical Alert</span>
+  <button onclick="dismissAlert()">✕</button>
+</div>
+
+<nav class="navbar">
+  <div class="nav-brand">
+    <div class="brand-icon">
+      <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+        <polygon points="14,2 26,8 26,20 14,26 2,20 2,8" stroke="#ff3c3c" stroke-width="2" fill="none"/>
+        <polygon points="14,6 22,10 22,18 14,22 6,18 6,10" stroke="#ff3c3c" stroke-width="1" fill="rgba(255,60,60,0.1)"/>
+        <line x1="14" y1="8" x2="14" y2="16" stroke="#ff3c3c" stroke-width="2.5"/>
+        <circle cx="14" cy="19" r="1.5" fill="#ff3c3c"/>
+      </svg>
+    </div>
+    <div>
+      <div class="brand-name">CRISIS<span>CORE</span></div>
+      <div class="brand-sub">Hospitality Emergency Command</div>
+    </div>
+  </div>
+  <div class="nav-links">
+    <a href="index.html" class="nav-link active">Dashboard</a>
+    <a href="incidents.html" class="nav-link">Incidents</a>
+    <a href="responders.html" class="nav-link">Responders</a>
+    <a href="report.html" class="nav-link">Report</a>
+    <a href="sos.html" class="nav-link sos-link nav-sos-hero">🆘 SOS</a>
+    <a href="map.html" class="nav-link">Map</a>
+    <a href="login.html" class="nav-link">Admin</a>
+  </div>
+  <div class="nav-status">
+    <div class="status-dot" id="systemStatus"></div>
+    <span id="systemStatusText">SYSTEM ONLINE</span>
+    <div class="alert-bell" onclick="toggleAlerts()">
+      🔔 <span id="alertCount" class="alert-badge">0</span>
+    </div>
+    <div class="live-time" id="liveTime"></div>
+  </div>
+</nav>
+
+<div id="alertDropdown" class="alert-dropdown hidden">
+  <div class="alert-dd-header">
+    <span>Live Alerts</span>
+    <button onclick="markAllRead()">Mark all read</button>
+  </div>
+  <div id="alertList"></div>
+</div>
+
+<!-- ===== HERO SOS SECTION ===== -->
+<section class="sos-hero-section">
+  <div class="sos-hero-rings">
+    <div class="sos-hero-ring"></div>
+    <div class="sos-hero-ring"></div>
+    <div class="sos-hero-ring"></div>
+  </div>
+  <a href="sos.html" class="sos-hero-btn" id="heroSosBtn">
+    <div class="sos-hero-icon">🆘</div>
+    <div class="sos-hero-label">SOS</div>
+    <div class="sos-hero-sub">TAP TO TRIGGER EMERGENCY</div>
+  </a>
+  <div class="sos-hero-actions">
+    <a href="report.html" class="sos-sub-btn report-sub">
+      <span class="sub-icon">📋</span>
+      <span>REPORT INCIDENT</span>
+    </a>
+    <a href="incidents.html" class="sos-sub-btn monitor-sub">
+      <span class="sub-icon">📡</span>
+      <span>LIVE MONITOR</span>
+    </a>
+    <a href="map.html" class="sos-sub-btn map-sub">
+      <span class="sub-icon">🗺️</span>
+      <span>LIVE MAP</span>
+    </a>
+    <a href="responders.html" class="sos-sub-btn dispatch-sub">
+      <span class="sub-icon">🚁</span>
+      <span>DISPATCH TEAM</span>
+    </a>
+  </div>
+</section>
+
+<main class="main-content">
+
+  <section class="stats-hero">
+    <div class="stat-card critical-card" id="stat-critical">
+      <div class="stat-icon">🚨</div>
+      <div class="stat-body">
+        <div class="stat-num" id="criticalCount">—</div>
+        <div class="stat-label">Critical Active</div>
+      </div>
+      <div class="stat-ring"></div>
+    </div>
+    <div class="stat-card active-card" id="stat-active">
+      <div class="stat-icon">⚡</div>
+      <div class="stat-body">
+        <div class="stat-num" id="activeCount">—</div>
+        <div class="stat-label">Active Incidents</div>
+      </div>
+      <div class="stat-ring"></div>
+    </div>
+    <div class="stat-card responder-card">
+      <div class="stat-icon">👤</div>
+      <div class="stat-body">
+        <div class="stat-num" id="responderCount">—</div>
+        <div class="stat-label">Available Responders</div>
+      </div>
+      <div class="stat-ring"></div>
+    </div>
+    <div class="stat-card resolved-card">
+      <div class="stat-icon">✅</div>
+      <div class="stat-body">
+        <div class="stat-num" id="resolvedCount">—</div>
+        <div class="stat-label">Resolved Today</div>
+      </div>
+      <div class="stat-ring"></div>
+    </div>
+  </section>
+
+  <section class="quick-actions">
+    <h2 class="section-title"><span class="title-line"></span>RAPID RESPONSE<span class="title-line"></span></h2>
+    <div class="action-grid">
+      <a href="sos.html" class="action-btn sos-btn">
+        <div class="btn-icon">🆘</div>
+        <span>TRIGGER SOS</span>
+        <div class="btn-glow"></div>
+      </a>
+      <a href="report.html" class="action-btn report-btn">
+        <div class="btn-icon">📋</div>
+        <span>REPORT INCIDENT</span>
+      </a>
+      <a href="incidents.html" class="action-btn monitor-btn">
+        <div class="btn-icon">📡</div>
+        <span>LIVE MONITOR</span>
+      </a>
+      <a href="map.html" class="action-btn monitor-btn" style="border-color: rgba(179, 136, 255, 0.3);">
+        <div class="btn-icon">🗺️</div>
+        <span>LIVE MAP</span>
+      </a>
+      <a href="responders.html" class="action-btn dispatch-btn">
+        <div class="btn-icon">🚁</div>
+        <span>DISPATCH TEAM</span>
+      </a>
+    </div>
+  </section>
+
+  <section class="dual-panel">
+    <div class="panel incidents-panel">
+      <div class="panel-header">
+        <span class="panel-title">⚡ ACTIVE INCIDENTS</span>
+        <a href="incidents.html" class="panel-link">View All →</a>
+      </div>
+      <div id="activeIncidentsFeed" class="incidents-feed">
+        <div class="loading-state">
+          <div class="loading-ring"></div>
+          <span>Scanning for incidents…</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel responders-panel">
+      <div class="panel-header">
+        <span class="panel-title">👥 RESPONDER STATUS</span>
+        <a href="responders.html" class="panel-link">Manage →</a>
+      </div>
+      <div id="responderStatusList" class="responder-list">
+        <div class="loading-state">
+          <div class="loading-ring"></div>
+          <span>Loading personnel…</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="timeline-section">
+    <div class="panel full-width-panel">
+      <div class="panel-header">
+        <span class="panel-title">📊 INCIDENT BREAKDOWN BY TYPE</span>
+        <span class="panel-sub">Last 30 Days</span>
+      </div>
+      <div id="incidentChart" class="chart-container"></div>
+    </div>
+  </section>
+
+</main>
+
+<footer class="footer">
+  <div class="footer-left">
+    <span class="brand-name">CRISIS<span>CORE</span></span> — Hospitality Emergency Command System
+  </div>
+  <div class="footer-right">
+    <span class="footer-badge">🔒 Secure Channel</span>
+    <span class="footer-badge">📡 Live Feed</span>
+    <span class="footer-badge" id="dbStatus">💾 DB Connected</span>
+  </div>
+</footer>
+
+<script src="js/api.js"></script>
+<script src="js/dashboard.js"></script>
+</body>
+</html>

@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Incident Detail — CrisisCore</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/main.css">
+</head>
+<body>
+<div class="bg-grid"></div><div class="scanline"></div>
+<div id="alertBanner" class="alert-banner hidden"><span class="alert-pulse"></span><span id="alertText"></span><button onclick="dismissAlert()">✕</button></div>
+<nav class="navbar">
+  <div class="nav-brand">
+    <div class="brand-icon"><svg width="28" height="28" viewBox="0 0 28 28" fill="none"><polygon points="14,2 26,8 26,20 14,26 2,20 2,8" stroke="#ff3c3c" stroke-width="2" fill="none"/><line x1="14" y1="8" x2="14" y2="16" stroke="#ff3c3c" stroke-width="2.5"/><circle cx="14" cy="19" r="1.5" fill="#ff3c3c"/></svg></div>
+    <div><div class="brand-name">CRISIS<span>CORE</span></div><div class="brand-sub">Hospitality Emergency Command</div></div>
+  </div>
+<div class="nav-links">
+    <a href="index.html" class="nav-link">Dashboard</a>
+    <a href="incidents.html" class="nav-link">Incidents</a>
+    <a href="responders.html" class="nav-link">Responders</a>
+    <a href="report.html" class="nav-link">Report</a>
+    <a href="sos.html" class="nav-link sos-link">SOS</a>
+    <a href="map.html" class="nav-link">Map</a>
+    <a href="login.html" class="nav-link">Admin</a>
+  </div>
+  <div class="nav-status">
+    <div class="status-dot" id="systemStatus"></div>
+    <span id="systemStatusText">SYSTEM ONLINE</span>
+    <div class="alert-bell" onclick="toggleAlerts()">🔔 <span id="alertCount" class="alert-badge">0</span></div>
+    <div class="live-time" id="liveTime"></div>
+  </div>
+</nav>
+<div id="alertDropdown" class="alert-dropdown hidden"><div class="alert-dd-header"><span>Live Alerts</span><button onclick="markAllRead()">Mark all read</button></div><div id="alertList"></div></div>
+
+<main class="main-content">
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;">
+    <a href="incidents.html" class="btn btn-outline btn-sm">← Back</a>
+    <div id="incidentBreadcrumb" style="font-family:var(--font-mono);font-size:12px;color:var(--text-dim);">Loading…</div>
+  </div>
+
+  <div id="incidentDetailContent">
+    <div class="loading-state"><div class="loading-ring"></div><span>Loading incident data…</span></div>
+  </div>
+</main>
+
+<footer class="footer">
+  <div class="footer-left"><span class="brand-name">CRISIS<span>CORE</span></span> — Incident Detail</div>
+  <div class="footer-right"><span class="footer-badge">🔒 Secure Channel</span></div>
+</footer>
+
+<script src="js/api.js"></script>
+<script>
+const params = new URLSearchParams(window.location.search);
+const incidentId = params.get('id');
+let incidentData = null;
+let allResponders = [];
+
+async function loadAll() {
+  if (!incidentId) { document.getElementById('incidentDetailContent').innerHTML = '<div class="empty-state"><div class="empty-icon">⚠️</div><div>No incident ID specified</div></div>'; return; }
+  try {
+    [incidentData, allResponders] = await Promise.all([API.incidents.get(incidentId), API.responders.getAll()]);
+    render();
+  } catch(e) {
+    document.getElementById('incidentDetailContent').innerHTML = `<div class="empty-state"><div class="empty-icon">⚠️</div><div>Could not load incident — ${e.message}</div></div>`;
+  }
+}
+
+function render() {
+  const inc = incidentData;
+  document.getElementById('incidentBreadcrumb').innerHTML = `<a href="incidents.html" style="color:var(--cyan);text-decoration:none;">INCIDENTS</a> / #${inc.id} — ${inc.title}`;
+  document.title = `#${inc.id} ${inc.title} — CrisisCore`;
+
+  const assignedIds = inc.responders.map(r => r.id);
+  const available = allResponders.filter(r => !assignedIds.includes(r.id) && r.status === 'available');
+
+  document.getElementById('incidentDetailContent').innerHTML = `
+    <!-- Header -->
+    <div style="background:var(--bg-panel);border:1px solid var(--border);border-radius:var(--radius-lg);padding:24px;margin-bottom:16px;">
+      <div style="display:flex;align-items:flex-start;gap:16px;flex-wrap:wrap;">
+        <span class="severity-badge ${severityClass(inc.severity)}" style="font-size:12px;padding:5px 12px;">${inc.severity.toUpperCase()}</span>
+        <div style="flex:1;">
+          <h1 style="font-family:var(--font-display);font-size:26px;font-weight:700;margin-bottom:6px;">${typeIcon(inc.type)} ${inc.title}</h1>
+          <div style="display:flex;gap:16px;flex-wrap:wrap;font-family:var(--font-mono);font-size:12px;color:var(--text-secondary);">
+            <span>📍 ${inc.location}${inc.room_number ? ` · Room ${inc.room_number}` : ''}</span>
+            <span>🏷️ ${inc.type}</span>
+            <span>👤 ${inc.reporter_name||'Unknown'}${inc.reporter_phone?' · '+inc.reporter_phone:''}</span>
+            <span>🕒 ${new Date(inc.created_at).toLocaleString()}</span>
+          </div>
+          ${inc.description ? `<p style="margin-top:10px;font-size:13px;color:var(--text-secondary);line-height:1.6;">${inc.description}</p>` : ''}
+        </div>
+        <span class="status-tag ${statusClass(inc.status)}" style="font-size:12px;">${inc.status.toUpperCase()}</span>
+      </div>
+      <!-- Status Actions -->
+      ${inc.status !== 'resolved' ? `
+      <div style="margin-top:20px;display:flex;gap:8px;flex-wrap:wrap;border-top:1px solid var(--border);padding-top:16px;">
+        <span style="font-family:var(--font-mono);font-size:11px;color:var(--text-dim);align-self:center;">UPDATE STATUS:</span>
+        <button class="btn btn-outline btn-sm" onclick="changeStatus('investigating')">🔍 Investigating</button>
+        <button class="btn btn-outline btn-sm" onclick="changeStatus('contained')">🔒 Contained</button>
+        <button class="btn btn-success btn-sm" onclick="changeStatus('resolved')">✅ Resolve</button>
+      </div>` : `<div style="margin-top:16px;padding:10px 16px;background:rgba(0,230,118,0.05);border:1px solid rgba(0,230,118,0.2);border-radius:6px;font-family:var(--font-mono);font-size:12px;color:var(--green);">✅ Resolved at ${inc.resolved_at ? new Date(inc.resolved_at).toLocaleString() : 'N/A'}</div>`}
+    </div>
+
+    <div class="detail-layout">
+      <!-- Left: Timeline -->
+      <div>
+        <div class="panel" style="margin-bottom:16px;">
+          <div class="panel-header"><span class="panel-title">📋 INCIDENT TIMELINE</span></div>
+          <div class="update-timeline" id="updateTimeline">
+            ${inc.updates.map(u => `
+              <div class="update-item update-${u.update_type}">
+                <div class="update-dot"></div>
+                <div>
+                  <div class="update-msg">${u.message}</div>
+                  <div class="update-time">${new Date(u.created_at).toLocaleString()}</div>
+                </div>
+              </div>`).join('')}
+          </div>
+        </div>
+        ${inc.status !== 'resolved' ? `
+        <div class="panel">
+          <div class="panel-header"><span class="panel-title">✍️ ADD UPDATE</span></div>
+          <div style="padding:16px;">
+            <div class="form-group">
+              <textarea class="form-textarea" id="updateMsg" placeholder="Enter situation update, actions taken, or observations…" style="min-height:80px;"></textarea>
+            </div>
+            <button class="btn btn-primary btn-sm" onclick="addUpdate()">Post Update</button>
+          </div>
+        </div>` : ''}
+      </div>
+
+      <!-- Right: Responders -->
+      <div>
+        <!-- Assigned Responders -->
+        <div class="panel" style="margin-bottom:16px;">
+          <div class="panel-header"><span class="panel-title">👥 ASSIGNED TEAM (${inc.responders.length})</span></div>
+          <div style="padding:12px;">
+            ${inc.responders.length === 0
+              ? '<div class="empty-state" style="padding:20px;"><div class="empty-icon" style="font-size:20px;">👤</div><div>No responders assigned yet</div></div>'
+              : inc.responders.map(r => `
+                <div class="responder-item">
+                  <div class="r-avatar r-on_duty">${r.name.split(' ').map(n=>n[0]).join('').slice(0,2)}</div>
+                  <div class="r-info">
+                    <div class="r-name">${r.name}</div>
+                    <div class="r-role">${r.role}${r.phone?' · '+r.phone:''}</div>
+                  </div>
+                  <div class="r-status-dot dot-on_duty"></div>
+                </div>`).join('')}
+          </div>
+        </div>
+        ${inc.status !== 'resolved' && available.length > 0 ? `
+        <div class="panel">
+          <div class="panel-header"><span class="panel-title">➕ ASSIGN RESPONDER</span></div>
+          <div style="padding:16px;">
+            <div class="form-group">
+              <select class="form-select" id="responderSelect">
+                <option value="">— Select available responder —</option>
+                ${available.map(r => `<option value="${r.id}">${r.name} (${r.role})</option>`).join('')}
+              </select>
+            </div>
+            <button class="btn btn-primary btn-sm" onclick="assignResponder()">Assign →</button>
+          </div>
+        </div>` : ''}
+      </div>
+    </div>`;
+}
+
+async function changeStatus(status) {
+  try {
+    await API.incidents.updateStatus(incidentId, status);
+    showToast(`Status updated to ${status}`, 'success');
+    await loadAll();
+  } catch(e) { showToast('Failed to update status', 'error'); }
+}
+
+async function addUpdate() {
+  const msg = document.getElementById('updateMsg')?.value?.trim();
+  if (!msg) { showToast('Please enter an update message', 'error'); return; }
+  try {
+    await API.incidents.addUpdate(incidentId, {message: msg});
+    showToast('Update posted', 'success');
+    await loadAll();
+  } catch(e) { showToast('Failed to post update', 'error'); }
+}
+
+async function assignResponder() {
+  const sel = document.getElementById('responderSelect');
+  if (!sel?.value) { showToast('Please select a responder', 'error'); return; }
+  try {
+    await API.incidents.assign(incidentId, parseInt(sel.value));
+    showToast('Responder assigned', 'success');
+    await loadAll();
+  } catch(e) { showToast('Failed to assign responder', 'error'); }
+}
+
+loadAll();
+</script>
+</body>
+</html>

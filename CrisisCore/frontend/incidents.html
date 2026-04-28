@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Incidents — CrisisCore</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/main.css">
+</head>
+<body>
+<div class="bg-grid"></div>
+<div class="scanline"></div>
+<div id="alertBanner" class="alert-banner hidden">
+  <span class="alert-pulse"></span>
+  <span id="alertText"></span>
+  <button onclick="dismissAlert()">✕</button>
+</div>
+<nav class="navbar">
+  <div class="nav-brand">
+    <div class="brand-icon">
+      <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+        <polygon points="14,2 26,8 26,20 14,26 2,20 2,8" stroke="#ff3c3c" stroke-width="2" fill="none"/>
+        <line x1="14" y1="8" x2="14" y2="16" stroke="#ff3c3c" stroke-width="2.5"/>
+        <circle cx="14" cy="19" r="1.5" fill="#ff3c3c"/>
+      </svg>
+    </div>
+    <div>
+      <div class="brand-name">CRISIS<span>CORE</span></div>
+      <div class="brand-sub">Hospitality Emergency Command</div>
+    </div>
+  </div>
+  <div class="nav-links">
+    <a href="index.html" class="nav-link">Dashboard</a>
+    <a href="incidents.html" class="nav-link">Incidents</a>
+    <a href="responders.html" class="nav-link">Responders</a>
+    <a href="report.html" class="nav-link">Report</a>
+    <a href="sos.html" class="nav-link sos-link">SOS</a>
+    <a href="map.html" class="nav-link">Map</a>
+    <a href="login.html" class="nav-link">Admin</a>
+  </div>
+  <div class="nav-status">
+    <div class="status-dot" id="systemStatus"></div>
+    <span id="systemStatusText">SYSTEM ONLINE</span>
+    <div class="alert-bell" onclick="toggleAlerts()">🔔 <span id="alertCount" class="alert-badge">0</span></div>
+    <div class="live-time" id="liveTime"></div>
+  </div>
+</nav>
+<div id="alertDropdown" class="alert-dropdown hidden">
+  <div class="alert-dd-header"><span>Live Alerts</span><button onclick="markAllRead()">Mark all read</button></div>
+  <div id="alertList"></div>
+</div>
+
+<main class="main-content">
+  <div class="page-header">
+    <div>
+      <div class="page-title">⚡ INCIDENT COMMAND</div>
+      <div class="page-subtitle">Real-time incident tracking & management</div>
+    </div>
+    <a href="report.html" class="btn btn-primary" style="margin-left:auto;">+ Report New</a>
+  </div>
+
+  <div class="filter-bar">
+    <span class="filter-label">STATUS:</span>
+    <button class="filter-btn active" onclick="setFilter('all', this)">All</button>
+    <button class="filter-btn" onclick="setFilter('active', this)">Active</button>
+    <button class="filter-btn" onclick="setFilter('investigating', this)">Investigating</button>
+    <button class="filter-btn" onclick="setFilter('contained', this)">Contained</button>
+    <button class="filter-btn" onclick="setFilter('resolved', this)">Resolved</button>
+    <span class="filter-label" style="margin-left:12px;">SEVERITY:</span>
+    <button class="filter-btn" onclick="setSevFilter('critical', this)" id="fsev-critical">🚨 Critical</button>
+    <button class="filter-btn" onclick="setSevFilter('high', this)" id="fsev-high">⚠️ High</button>
+    <button class="filter-btn" onclick="setSevFilter('', this)" id="fsev-all">All Levels</button>
+    <div style="margin-left:auto;display:flex;align-items:center;gap:8px;">
+      <input type="text" class="form-input" id="searchInput" placeholder="Search incidents…" style="width:200px;padding:6px 12px;font-size:12px;" oninput="filterRender()">
+    </div>
+  </div>
+
+  <div id="incidentsList" class="incidents-grid">
+    <div class="loading-state"><div class="loading-ring"></div><span>Loading incidents…</span></div>
+  </div>
+</main>
+
+<footer class="footer">
+  <div class="footer-left"><span class="brand-name">CRISIS<span>CORE</span></span> — Incident Command</div>
+  <div class="footer-right">
+    <span id="incidentCountBadge" class="footer-badge">0 incidents</span>
+    <span class="footer-badge">🔄 Auto-refresh: 30s</span>
+  </div>
+</footer>
+
+<script src="js/api.js"></script>
+<script>
+let allIncidents = [];
+let currentStatus = 'all';
+let currentSev = '';
+
+async function loadIncidents() {
+  try {
+    allIncidents = await API.incidents.getAll();
+    filterRender();
+  } catch(e) {
+    document.getElementById('incidentsList').innerHTML =
+      `<div class="empty-state"><div class="empty-icon">⚠️</div><div>Backend offline — start Flask server</div></div>`;
+  }
+}
+
+function setFilter(status, btn) {
+  currentStatus = status;
+  document.querySelectorAll('.filter-btn').forEach(b => { if(['all','active','investigating','contained','resolved'].some(s=>b.textContent.toLowerCase().includes(s))) b.classList.remove('active'); });
+  btn.classList.add('active');
+  filterRender();
+}
+
+function setSevFilter(sev, btn) {
+  currentSev = sev;
+  document.querySelectorAll('[id^="fsev-"]').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  filterRender();
+}
+
+function filterRender() {
+  const search = (document.getElementById('searchInput')?.value || '').toLowerCase();
+  let filtered = allIncidents.filter(inc => {
+    const statusOk = currentStatus === 'all' || inc.status === currentStatus;
+    const sevOk = !currentSev || inc.severity === currentSev;
+    const searchOk = !search || inc.title.toLowerCase().includes(search) || inc.location.toLowerCase().includes(search) || inc.type.toLowerCase().includes(search);
+    return statusOk && sevOk && searchOk;
+  });
+  renderIncidents(filtered);
+}
+
+function renderIncidents(incidents) {
+  const container = document.getElementById('incidentsList');
+  const badge = document.getElementById('incidentCountBadge');
+  if (badge) badge.textContent = `${incidents.length} incident${incidents.length!==1?'s':''}`;
+  if (incidents.length === 0) {
+    container.innerHTML = `<div class="empty-state"><div class="empty-icon">✅</div><div>No incidents match the current filter</div></div>`;
+    return;
+  }
+  container.innerHTML = incidents.map(inc => `
+    <a class="incident-card sev-${inc.severity}-card" href="incident-detail.html?id=${inc.id}">
+      <div class="card-top">
+        <span class="severity-badge ${severityClass(inc.severity)}">${inc.severity.toUpperCase()}</span>
+        <div class="card-title">${typeIcon(inc.type)} ${inc.title}</div>
+        <span class="status-tag ${statusClass(inc.status)}">${inc.status}</span>
+      </div>
+      <div class="card-meta">
+        <span>📍 ${inc.location}${inc.room_number?' · Rm '+inc.room_number:''}</span>
+        <span>🏷️ ${inc.type}</span>
+        <span>👤 ${inc.reporter_name||'Unknown'}</span>
+        <span>🕒 ${timeAgo(inc.created_at)}</span>
+        ${inc.resolved_at ? `<span>✅ Resolved ${timeAgo(inc.resolved_at)}</span>` : ''}
+      </div>
+      ${inc.description ? `<div style="margin-top:8px;font-size:12px;color:var(--text-secondary);overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;">${inc.description}</div>` : ''}
+    </a>`).join('');
+}
+
+(async()=>{
+  await loadIncidents();
+  setInterval(loadIncidents, 30000);
+  document.getElementById('fsev-all').classList.add('active');
+})();
+</script>
+</body>
+</html>

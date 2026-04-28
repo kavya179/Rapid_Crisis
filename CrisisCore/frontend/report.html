@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Report Incident — CrisisCore</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/main.css">
+</head>
+<body>
+<div class="bg-grid"></div><div class="scanline"></div>
+<div id="alertBanner" class="alert-banner hidden"><span class="alert-pulse"></span><span id="alertText"></span><button onclick="dismissAlert()">✕</button></div>
+<nav class="navbar">
+  <div class="nav-brand">
+    <div class="brand-icon"><svg width="28" height="28" viewBox="0 0 28 28" fill="none"><polygon points="14,2 26,8 26,20 14,26 2,20 2,8" stroke="#ff3c3c" stroke-width="2" fill="none"/><line x1="14" y1="8" x2="14" y2="16" stroke="#ff3c3c" stroke-width="2.5"/><circle cx="14" cy="19" r="1.5" fill="#ff3c3c"/></svg></div>
+    <div><div class="brand-name">CRISIS<span>CORE</span></div><div class="brand-sub">Hospitality Emergency Command</div></div>
+  </div>
+  <div class="nav-links">
+    <a href="index.html" class="nav-link">Dashboard</a>
+    <a href="incidents.html" class="nav-link">Incidents</a>
+    <a href="responders.html" class="nav-link">Responders</a>
+    <a href="report.html" class="nav-link">Report</a>
+    <a href="sos.html" class="nav-link sos-link">SOS</a>
+    <a href="map.html" class="nav-link">Map</a>
+    <a href="login.html" class="nav-link">Admin</a>
+  </div>
+  <div class="nav-status">
+    <div class="status-dot" id="systemStatus"></div>
+    <span id="systemStatusText">SYSTEM ONLINE</span>
+    <div class="alert-bell" onclick="toggleAlerts()">🔔 <span id="alertCount" class="alert-badge">0</span></div>
+    <div class="live-time" id="liveTime"></div>
+  </div>
+</nav>
+<div id="alertDropdown" class="alert-dropdown hidden"><div class="alert-dd-header"><span>Live Alerts</span><button onclick="markAllRead()">Mark all read</button></div><div id="alertList"></div></div>
+
+<main class="main-content">
+  <div class="page-header">
+    <div>
+      <div class="page-title">📋 REPORT INCIDENT</div>
+      <div class="page-subtitle">Submit a new emergency or safety incident</div>
+    </div>
+    <a href="sos.html" class="btn btn-danger" style="margin-left:auto;animation:sos-blink 2s infinite;">🆘 Emergency SOS</a>
+  </div>
+
+  <div class="report-form">
+    <div class="report-form-header">
+      <div class="report-form-title">🛡️ INCIDENT REPORT FORM</div>
+      <div style="font-family:var(--font-mono);font-size:11px;color:var(--text-dim);margin-top:4px;">All fields marked * are required. Information is encrypted and logged.</div>
+    </div>
+    <div class="report-form-body">
+
+      <!-- Incident Type -->
+      <div class="form-group">
+        <label class="form-label">Incident Type *</label>
+        <div class="type-grid">
+          <input type="radio" name="type" id="t-fire" value="fire" class="type-option">
+          <label for="t-fire" class="type-label"><span class="type-emoji">🔥</span>Fire</label>
+          <input type="radio" name="type" id="t-medical" value="medical" class="type-option">
+          <label for="t-medical" class="type-label"><span class="type-emoji">🚑</span>Medical</label>
+          <input type="radio" name="type" id="t-security" value="security" class="type-option">
+          <label for="t-security" class="type-label"><span class="type-emoji">🛡️</span>Security</label>
+          <input type="radio" name="type" id="t-evacuation" value="evacuation" class="type-option">
+          <label for="t-evacuation" class="type-label"><span class="type-emoji">🚪</span>Evacuation</label>
+          <input type="radio" name="type" id="t-flood" value="flood" class="type-option">
+          <label for="t-flood" class="type-label"><span class="type-emoji">💧</span>Flood/Water</label>
+          <input type="radio" name="type" id="t-power" value="power" class="type-option">
+          <label for="t-power" class="type-label"><span class="type-emoji">⚡</span>Power Outage</label>
+          <input type="radio" name="type" id="t-theft" value="theft" class="type-option">
+          <label for="t-theft" class="type-label"><span class="type-emoji">🔓</span>Theft</label>
+          <input type="radio" name="type" id="t-fight" value="fight" class="type-option">
+          <label for="t-fight" class="type-label"><span class="type-emoji">⚠️</span>Disturbance</label>
+          <input type="radio" name="type" id="t-other" value="other" class="type-option" checked>
+          <label for="t-other" class="type-label"><span class="type-emoji">📋</span>Other</label>
+        </div>
+      </div>
+
+      <!-- Severity -->
+      <div class="form-group">
+        <label class="form-label">Severity Level *</label>
+        <div class="sev-grid">
+          <input type="radio" name="severity" id="s-critical" value="critical" class="sev-option">
+          <label for="s-critical" class="sev-label sev-critical-label"><span class="sev-dot"></span>Critical</label>
+          <input type="radio" name="severity" id="s-high" value="high" class="sev-option">
+          <label for="s-high" class="sev-label sev-high-label"><span class="sev-dot"></span>High</label>
+          <input type="radio" name="severity" id="s-medium" value="medium" class="sev-option" checked>
+          <label for="s-medium" class="sev-label sev-medium-label"><span class="sev-dot"></span>Medium</label>
+          <input type="radio" name="severity" id="s-low" value="low" class="sev-option">
+          <label for="s-low" class="sev-label sev-low-label"><span class="sev-dot"></span>Low</label>
+        </div>
+      </div>
+
+      <!-- Title -->
+      <div class="form-group">
+        <label class="form-label" for="title">Incident Title *</label>
+        <input type="text" id="title" class="form-input" placeholder="e.g. Fire alarm in east wing, Guest medical emergency in lobby…">
+      </div>
+
+      <!-- Location -->
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label" for="location">Location *</label>
+          <div class="location-input-wrap">
+            <input type="text" id="location" class="form-input location-input" placeholder="e.g. Lobby, Pool Area, Restaurant, Conference Hall…">
+            <button type="button" class="loc-detect-btn" id="locDetectBtn" onclick="detectLocation()" title="Auto-detect my location">
+              <span class="loc-btn-icon" id="locBtnIcon">📍</span>
+              <span id="locBtnText">DETECT</span>
+            </button>
+          </div>
+          <div id="locationStatus" class="location-status hidden"></div>
+          <!-- Hidden GPS coords stored alongside address -->
+          <input type="hidden" id="gps_lat">
+          <input type="hidden" id="gps_lng">
+          <input type="hidden" id="gps_accuracy">
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="room_number">Room / Floor Number</label>
+          <input type="text" id="room_number" class="form-input" placeholder="e.g. 204, Floor 3, Suite A…">
+        </div>
+      </div>
+
+      <!-- Description -->
+      <div class="form-group">
+        <label class="form-label" for="description">Incident Description</label>
+        <textarea id="description" class="form-textarea" placeholder="Provide detailed description of what is happening, people involved, visible hazards, current situation…"></textarea>
+      </div>
+
+      <!-- Reporter Info -->
+      <div style="background:var(--bg-deep);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:16px;">
+        <div style="font-family:var(--font-mono);font-size:11px;color:var(--text-secondary);letter-spacing:1px;margin-bottom:12px;">👤 REPORTER INFORMATION (Optional)</div>
+        <div class="form-row">
+          <div class="form-group" style="margin-bottom:0;">
+            <label class="form-label" for="reporter_name">Your Name</label>
+            <input type="text" id="reporter_name" class="form-input" placeholder="Name or Anonymous">
+          </div>
+          <div class="form-group" style="margin-bottom:0;">
+            <label class="form-label" for="reporter_phone">Contact Phone</label>
+            <input type="tel" id="reporter_phone" class="form-input" placeholder="+91 XXXXX XXXXX">
+          </div>
+        </div>
+      </div>
+
+      <!-- Submit -->
+      <div class="submit-row">
+        <button class="btn btn-primary" onclick="submitReport()" id="submitBtn">⚡ SUBMIT INCIDENT REPORT</button>
+        <button class="btn btn-outline" onclick="clearForm()">Clear Form</button>
+      </div>
+    </div>
+  </div>
+</main>
+
+<footer class="footer">
+  <div class="footer-left"><span class="brand-name">CRISIS<span>CORE</span></span> — Incident Report</div>
+  <div class="footer-right"><span class="footer-badge">🔒 Encrypted Submission</span></div>
+</footer>
+
+<script src="js/api.js"></script>
+<script>
+/* ── Auto-detect location on page load ── */
+window.addEventListener('DOMContentLoaded', () => {
+  detectLocation(true); // silent auto-detect on load
+});
+
+async function detectLocation(silent = false) {
+  if (!navigator.geolocation) {
+    if (!silent) setLocStatus('error', '⚠️ Geolocation not supported by this browser.');
+    return;
+  }
+
+  setLocStatus('loading', '📡 Detecting your location…');
+  setLocBtn('loading');
+
+  navigator.geolocation.getCurrentPosition(
+    async (pos) => {
+      const { latitude: lat, longitude: lng, accuracy } = pos.coords;
+      document.getElementById('gps_lat').value = lat;
+      document.getElementById('gps_lng').value = lng;
+      document.getElementById('gps_accuracy').value = Math.round(accuracy);
+
+      setLocStatus('loading', '🌐 Resolving address…');
+
+      try {
+        // Nominatim reverse-geocode (free, no API key)
+        const res = await fetch(
+          `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&addressdetails=1`,
+          { headers: { 'Accept-Language': 'en' } }
+        );
+        const data = await res.json();
+
+        const a = data.address || {};
+        // Build a concise readable address
+        const parts = [
+          a.road || a.pedestrian || a.footway,
+          a.neighbourhood || a.suburb || a.quarter,
+          a.city || a.town || a.village || a.county,
+          a.state,
+          a.country
+        ].filter(Boolean);
+
+        const address = parts.join(', ');
+        document.getElementById('location').value = address;
+        setLocStatus('success',
+          `✅ Location detected (±${Math.round(accuracy)}m) — <a href="https://www.openstreetmap.org/?mlat=${lat}&mlon=${lng}#map=17/${lat}/${lng}" target="_blank" style="color:var(--cyan)">View on map ↗</a>`
+        );
+        setLocBtn('done');
+      } catch (err) {
+        // Fallback: just use coordinates
+        document.getElementById('location').value = `GPS: ${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+        setLocStatus('warn', `⚠️ Could not resolve address — GPS coordinates saved (±${Math.round(accuracy)}m).`);
+        setLocBtn('done');
+      }
+    },
+    (err) => {
+      const msgs = {
+        1: '🔒 Location permission denied. Please allow location access and try again.',
+        2: '📡 Could not determine position. Check GPS/network signal.',
+        3: '⏱️ Location request timed out. Please try again.'
+      };
+      setLocStatus('error', msgs[err.code] || '⚠️ Unknown location error.');
+      setLocBtn('idle');
+    },
+    { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 }
+  );
+}
+
+function setLocStatus(type, html) {
+  const el = document.getElementById('locationStatus');
+  el.className = `location-status loc-${type}`;
+  el.innerHTML = html;
+  el.classList.remove('hidden');
+}
+
+function setLocBtn(state) {
+  const btn  = document.getElementById('locDetectBtn');
+  const icon = document.getElementById('locBtnIcon');
+  const txt  = document.getElementById('locBtnText');
+  if (state === 'loading') {
+    btn.disabled = true;
+    icon.textContent = '⏳';
+    txt.textContent = 'DETECTING…';
+  } else if (state === 'done') {
+    btn.disabled = false;
+    icon.textContent = '🔄';
+    txt.textContent = 'RE-DETECT';
+  } else {
+    btn.disabled = false;
+    icon.textContent = '📍';
+    txt.textContent = 'DETECT';
+  }
+}
+
+/* ── Submit ── */
+async function submitReport() {
+  const type         = document.querySelector('input[name="type"]:checked')?.value;
+  const severity     = document.querySelector('input[name="severity"]:checked')?.value;
+  const title        = document.getElementById('title').value.trim();
+  const location     = document.getElementById('location').value.trim();
+  const room_number  = document.getElementById('room_number').value.trim();
+  const description  = document.getElementById('description').value.trim();
+  const reporter_name  = document.getElementById('reporter_name').value.trim() || 'Anonymous';
+  const reporter_phone = document.getElementById('reporter_phone').value.trim();
+  const gps_lat      = document.getElementById('gps_lat').value;
+  const gps_lng      = document.getElementById('gps_lng').value;
+  const gps_accuracy = document.getElementById('gps_accuracy').value;
+
+  if (!title)    { showToast('Please enter an incident title', 'error');    document.getElementById('title').focus();    return; }
+  if (!location) { showToast('Please enter the incident location', 'error'); document.getElementById('location').focus(); return; }
+
+  const btn = document.getElementById('submitBtn');
+  btn.disabled = true; btn.textContent = 'Submitting…';
+
+  try {
+    const result = await API.incidents.create({
+      type, severity, title, location, room_number, description,
+      reporter_name, reporter_phone,
+      gps_lat, gps_lng, gps_accuracy
+    });
+    showToast(`✅ Incident #${result.incident_id} reported successfully!`, 'success');
+    setTimeout(() => window.location.href = `incident-detail.html?id=${result.incident_id}`, 1500);
+  } catch(e) {
+    showToast('Failed to submit report — is the backend running?', 'error');
+    btn.disabled = false; btn.textContent = '⚡ SUBMIT INCIDENT REPORT';
+  }
+}
+
+function clearForm() {
+  document.getElementById('title').value        = '';
+  document.getElementById('location').value     = '';
+  document.getElementById('room_number').value  = '';
+  document.getElementById('description').value  = '';
+  document.getElementById('reporter_name').value  = '';
+  document.getElementById('reporter_phone').value = '';
+  document.getElementById('gps_lat').value = '';
+  document.getElementById('gps_lng').value = '';
+  document.getElementById('gps_accuracy').value = '';
+  document.getElementById('s-medium').checked = true;
+  document.getElementById('t-other').checked  = true;
+  document.getElementById('locationStatus').className = 'location-status hidden';
+  setLocBtn('idle');
+}
+</script>
+</body>
+</html>

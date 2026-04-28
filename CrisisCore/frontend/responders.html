@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Responders — CrisisCore</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/main.css">
+</head>
+<body>
+<div class="bg-grid"></div><div class="scanline"></div>
+<div id="alertBanner" class="alert-banner hidden"><span class="alert-pulse"></span><span id="alertText"></span><button onclick="dismissAlert()">✕</button></div>
+<nav class="navbar">
+  <div class="nav-brand">
+    <div class="brand-icon"><svg width="28" height="28" viewBox="0 0 28 28" fill="none"><polygon points="14,2 26,8 26,20 14,26 2,20 2,8" stroke="#ff3c3c" stroke-width="2" fill="none"/><line x1="14" y1="8" x2="14" y2="16" stroke="#ff3c3c" stroke-width="2.5"/><circle cx="14" cy="19" r="1.5" fill="#ff3c3c"/></svg></div>
+    <div><div class="brand-name">CRISIS<span>CORE</span></div><div class="brand-sub">Hospitality Emergency Command</div></div>
+  </div>
+  <div class="nav-links">
+    <a href="index.html" class="nav-link">Dashboard</a>
+    <a href="incidents.html" class="nav-link">Incidents</a>
+    <a href="responders.html" class="nav-link">Responders</a>
+    <a href="report.html" class="nav-link">Report</a>
+    <a href="sos.html" class="nav-link sos-link">SOS</a>
+    <a href="map.html" class="nav-link">Map</a>
+    <a href="login.html" class="nav-link">Admin</a>
+  </div>
+  <div class="nav-status">
+    <div class="status-dot" id="systemStatus"></div>
+    <span id="systemStatusText">SYSTEM ONLINE</span>
+    <div class="alert-bell" onclick="toggleAlerts()">🔔 <span id="alertCount" class="alert-badge">0</span></div>
+    <div class="live-time" id="liveTime"></div>
+  </div>
+</nav>
+<div id="alertDropdown" class="alert-dropdown hidden"><div class="alert-dd-header"><span>Live Alerts</span><button onclick="markAllRead()">Mark all read</button></div><div id="alertList"></div></div>
+
+<main class="main-content">
+  <div class="page-header">
+    <div>
+      <div class="page-title">👥 RESPONSE TEAM</div>
+      <div class="page-subtitle">Personnel status & availability at a glance</div>
+    </div>
+    <div style="display:flex;gap:12px;margin-left:auto;align-items:center;">
+      <span id="availCount" style="background:rgba(0,230,118,0.1);border:1px solid rgba(0,230,118,0.3);color:var(--green);padding:6px 14px;border-radius:20px;font-family:var(--font-mono);font-size:12px;">— available</span>
+      <span id="dutyCount" style="background:rgba(255,122,26,0.1);border:1px solid rgba(255,122,26,0.3);color:var(--orange);padding:6px 14px;border-radius:20px;font-family:var(--font-mono);font-size:12px;">— on duty</span>
+    </div>
+  </div>
+
+  <!-- Department Filter -->
+  <div class="filter-bar">
+    <span class="filter-label">DEPARTMENT:</span>
+    <button class="filter-btn active" onclick="filterDept('', this)">All</button>
+    <button class="filter-btn" onclick="filterDept('Security', this)">🛡️ Security</button>
+    <button class="filter-btn" onclick="filterDept('Medical', this)">🏥 Medical</button>
+    <button class="filter-btn" onclick="filterDept('Management', this)">📋 Management</button>
+    <button class="filter-btn" onclick="filterDept('Fire Safety', this)">🔥 Fire Safety</button>
+    <button class="filter-btn" onclick="filterDept('Front Desk', this)">🏨 Front Desk</button>
+    <button class="filter-btn" onclick="filterDept('Engineering', this)">⚙️ Engineering</button>
+  </div>
+
+  <div id="respondersGrid" class="responders-grid">
+    <div class="loading-state"><div class="loading-ring"></div><span>Loading personnel…</span></div>
+  </div>
+</main>
+
+<footer class="footer">
+  <div class="footer-left"><span class="brand-name">CRISIS<span>CORE</span></span> — Response Team</div>
+  <div class="footer-right"><span class="footer-badge">🔄 Live Status</span></div>
+</footer>
+
+<script src="js/api.js"></script>
+<script>
+let allResponders = [];
+let currentDept = '';
+const DEPT_COLORS = {
+  'Security': '#ff7a1a','Medical':'#ff2d2d','Management':'#b388ff',
+  'Fire Safety':'#ffd60a','Front Desk':'#00b4ff','Engineering':'#00e676','default':'#7fa8c8'
+};
+
+async function loadResponders() {
+  try {
+    allResponders = await API.responders.getAll();
+    updateCounts();
+    renderResponders();
+  } catch(e) {
+    document.getElementById('respondersGrid').innerHTML =
+      '<div class="empty-state"><div class="empty-icon">⚠️</div><div>Backend offline</div></div>';
+  }
+}
+
+function updateCounts() {
+  document.getElementById('availCount').textContent = allResponders.filter(r=>r.status==='available').length + ' available';
+  document.getElementById('dutyCount').textContent = allResponders.filter(r=>r.status==='on_duty').length + ' on duty';
+}
+
+function filterDept(dept, btn) {
+  currentDept = dept;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderResponders();
+}
+
+function renderResponders() {
+  const grid = document.getElementById('respondersGrid');
+  const filtered = currentDept ? allResponders.filter(r => r.department === currentDept) : allResponders;
+  if (filtered.length === 0) {
+    grid.innerHTML = '<div class="empty-state"><div class="empty-icon">👤</div><div>No personnel in this department</div></div>';
+    return;
+  }
+  const color = DEPT_COLORS[currentDept] || '#7fa8c8';
+  grid.innerHTML = filtered.map(r => {
+    const c = DEPT_COLORS[r.department] || DEPT_COLORS['default'];
+    const initials = r.name.split(' ').map(n=>n[0]).join('').slice(0,2);
+    const statusCls = r.status === 'available' ? 'rc-available' : r.status === 'on_duty' ? 'rc-on_duty' : 'rc-off_duty';
+    const dotCls = r.status === 'available' ? 'dot-available' : r.status === 'on_duty' ? 'dot-on_duty' : 'dot-off_duty';
+    return `
+      <div class="responder-card">
+        <div class="rc-top">
+          <div class="rc-avatar r-${r.status}" style="background:${c}22;border-color:${c}66;color:${c};">${initials}</div>
+          <div>
+            <div class="rc-name">${r.name}</div>
+            <div class="rc-role">${r.role}</div>
+            <div class="rc-dept">🏢 ${r.department || 'General'}</div>
+          </div>
+          <div style="margin-left:auto;"><div class="r-status-dot ${dotCls}" style="width:10px;height:10px;"></div></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <span class="rc-status ${statusCls}">
+            <span>${{available:'●',on_duty:'◉',off_duty:'○'}[r.status]||'○'}</span>
+            ${r.status.replace('_',' ').toUpperCase()}
+          </span>
+          ${r.phone ? `<span class="rc-phone">📞 ${r.phone}</span>` : ''}
+        </div>
+        ${r.current_incident_id ? `<div style="margin-top:8px;font-family:var(--font-mono);font-size:10px;color:var(--orange);">→ On Incident #${r.current_incident_id}</div>` : ''}
+      </div>`;
+  }).join('');
+}
+
+(async()=>{
+  await loadResponders();
+  setInterval(loadResponders, 30000);
+})();
+</script>
+</body>
+</html>

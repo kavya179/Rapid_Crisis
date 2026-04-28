@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Map Tracking — CrisisCore</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/main.css">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<style>
+  .map-layout { display: grid; grid-template-columns: 1fr 320px; gap: 16px; height: calc(100vh - 200px); }
+  @media (max-width: 900px) { .map-layout { grid-template-columns: 1fr; height: auto; } }
+
+  #mapContainer {
+    border-radius: var(--radius-lg); overflow: hidden;
+    border: 1px solid var(--border);
+    min-height: 500px;
+  }
+  #map { width: 100%; height: 100%; min-height: 500px; }
+
+  .map-sidebar {
+    display: flex; flex-direction: column; gap: 12px;
+    overflow-y: auto; max-height: calc(100vh - 200px);
+  }
+  @media (max-width: 900px) { .map-sidebar { max-height: 400px; } }
+
+  .map-incident-item {
+    background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 12px 14px;
+    cursor: pointer; transition: all 0.2s;
+  }
+  .map-incident-item:hover { background: var(--bg-hover); border-color: var(--border-bright); }
+  .map-incident-item.active { border-color: var(--cyan); background: var(--cyan-dim); }
+
+  .map-legend {
+    background: var(--bg-panel); border: 1px solid var(--border);
+    border-radius: var(--radius-lg); padding: 16px;
+  }
+  .legend-title { font-family: var(--font-display); font-size: 13px; font-weight: 700; letter-spacing: 2px; margin-bottom: 10px; color: var(--text-secondary); }
+  .legend-item { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; font-size: 12px; color: var(--text-secondary); }
+  .legend-dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }
+
+  .map-controls {
+    background: var(--bg-panel); border: 1px solid var(--border);
+    border-radius: var(--radius-lg); padding: 14px;
+    display: flex; flex-direction: column; gap: 8px;
+  }
+  .map-filter-btn {
+    padding: 7px 12px; border-radius: 4px;
+    border: 1px solid var(--border); background: transparent;
+    color: var(--text-secondary); cursor: pointer;
+    font-family: var(--font-display); font-size: 12px; font-weight: 600;
+    letter-spacing: 1px; text-transform: uppercase;
+    transition: all 0.2s; text-align: left;
+  }
+  .map-filter-btn:hover, .map-filter-btn.active { border-color: var(--cyan); color: var(--cyan); background: var(--cyan-dim); }
+
+  /* Override leaflet dark theme */
+  .leaflet-container { background: #0a1520 !important; }
+  .leaflet-tile { filter: invert(1) hue-rotate(180deg) brightness(0.7) saturate(1.2); }
+  .leaflet-popup-content-wrapper { background: var(--bg-panel); color: var(--text-primary); border: 1px solid var(--border); border-radius: var(--radius); }
+  .leaflet-popup-tip { background: var(--bg-panel); }
+  .leaflet-popup-content { font-family: var(--font-body); font-size: 13px; }
+</style>
+</head>
+<body>
+<div class="bg-grid"></div>
+<div class="scanline"></div>
+<div id="alertBanner" class="alert-banner hidden"><span class="alert-pulse"></span><span id="alertText"></span><button onclick="dismissAlert()">✕</button></div>
+<nav class="navbar">
+  <div class="nav-brand">
+    <div class="brand-icon"><svg width="28" height="28" viewBox="0 0 28 28" fill="none"><polygon points="14,2 26,8 26,20 14,26 2,20 2,8" stroke="#ff3c3c" stroke-width="2" fill="none"/><line x1="14" y1="8" x2="14" y2="16" stroke="#ff3c3c" stroke-width="2.5"/><circle cx="14" cy="19" r="1.5" fill="#ff3c3c"/></svg></div>
+    <div><div class="brand-name">CRISIS<span>CORE</span></div><div class="brand-sub">Hospitality Emergency Command</div></div>
+  </div>
+  <div class="nav-links">
+    <a href="index.html" class="nav-link">Dashboard</a>
+    <a href="incidents.html" class="nav-link">Incidents</a>
+    <a href="responders.html" class="nav-link">Responders</a>
+    <a href="report.html" class="nav-link">Report</a>
+    <a href="sos.html" class="nav-link sos-link">SOS</a>
+    <a href="map.html" class="nav-link active">Map</a>
+    <a href="login.html" class="nav-link">Admin</a>
+  </div>
+  <div class="nav-status">
+    <div class="status-dot" id="systemStatus"></div>
+    <span id="systemStatusText">SYSTEM ONLINE</span>
+    <div class="alert-bell" onclick="toggleAlerts()">🔔 <span id="alertCount" class="alert-badge">0</span></div>
+    <div class="live-time" id="liveTime"></div>
+  </div>
+</nav>
+<div id="alertDropdown" class="alert-dropdown hidden"><div class="alert-dd-header"><span>Live Alerts</span><button onclick="markAllRead()">Mark all read</button></div><div id="alertList"></div></div>
+
+<main class="main-content">
+  <div class="page-header">
+    <div>
+      <div class="page-title">🗺️ MAP TRACKING</div>
+      <div class="page-subtitle">Live incident locations & responder positions</div>
+    </div>
+    <a href="sos.html" class="btn btn-danger" style="margin-left:auto;animation:sos-blink 2s infinite;">🆘 SOS</a>
+  </div>
+
+  <div class="map-layout">
+    <div id="mapContainer"><div id="map"></div></div>
+
+    <div class="map-sidebar">
+      <div class="map-controls">
+        <div style="font-family:var(--font-display);font-size:13px;font-weight:700;letter-spacing:2px;color:var(--text-secondary);margin-bottom:4px;">FILTER MARKERS</div>
+        <button class="map-filter-btn active" onclick="filterMap('all',this)">📍 All Incidents</button>
+        <button class="map-filter-btn" onclick="filterMap('critical',this)">🚨 Critical Only</button>
+        <button class="map-filter-btn" onclick="filterMap('active',this)">⚡ Active Only</button>
+        <button class="map-filter-btn" onclick="filterMap('responders',this)">👤 Responders</button>
+        <button class="map-filter-btn" onclick="locateMe()">🎯 My Location</button>
+      </div>
+
+      <div class="map-legend">
+        <div class="legend-title">LEGEND</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#ff2d2d;box-shadow:0 0 6px #ff2d2d;"></div>Critical Incident</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#ff7a1a;"></div>High Severity</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#ffd60a;"></div>Medium Severity</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#00e676;"></div>Low / Resolved</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#00b4ff;"></div>Responder Location</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#fff;border:2px solid #00b4ff;"></div>Your Position</div>
+      </div>
+
+      <div class="map-legend">
+        <div class="legend-title">ACTIVE INCIDENTS</div>
+        <div id="mapIncidentList">
+          <div class="loading-state"><div class="loading-ring"></div><span>Loading…</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<footer class="footer">
+  <div class="footer-left"><span class="brand-name">CRISIS<span>CORE</span></span> — Map Tracking</div>
+  <div class="footer-right">
+    <span class="footer-badge">🗺️ OpenStreetMap</span>
+    <span class="footer-badge">🔄 Live Update</span>
+    <span id="offlineBadge" class="footer-badge" style="display:none;border-color:rgba(255,210,10,0.4);color:var(--yellow);">⚠️ OFFLINE MODE</span>
+  </div>
+</footer>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="js/api.js"></script>
+<script src="js/offline.js"></script>
+<script>
+// Base Command Center coordinates (Ahmedabad, India)
+const HOTEL_LAT = 23.0225;
+const HOTEL_LNG = 72.5714;
+
+let map, markers = [], currentFilter = 'all';
+let allIncidents = [];
+
+// Severity colors
+const SEV_COLORS = { critical: '#ff2d2d', high: '#ff7a1a', medium: '#ffd60a', low: '#00e676' };
+
+function createMarkerIcon(color, pulse = false) {
+  return L.divIcon({
+    className: '',
+    html: `<div style="
+      width:18px;height:18px;border-radius:50%;
+      background:${color};
+      border:2px solid rgba(255,255,255,0.4);
+      box-shadow:0 0 ${pulse?'12px':'6px'} ${color};
+      ${pulse ? 'animation:pulse-dot 1s infinite alternate;' : ''}
+    "></div>`,
+    iconSize: [18, 18],
+    iconAnchor: [9, 9],
+  });
+}
+
+function initMap() {
+  // Zoom level 13 gives a good city-wide view. Change to 5 for a country-wide view.
+  map = L.map('map', { zoomControl: true }).setView([HOTEL_LAT, HOTEL_LNG], 13);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© OpenStreetMap contributors',
+    maxZoom: 19
+  }).addTo(map);
+
+  // Command Center marker
+  const hotelIcon = L.divIcon({
+    className: '',
+    html: `<div style="background:#00b4ff;width:24px;height:24px;border-radius:4px;border:2px solid white;display:flex;align-items:center;justify-content:center;font-size:14px;box-shadow:0 0 12px #00b4ff;">🏨</div>`,
+    iconSize: [24, 24], iconAnchor: [12, 12]
+  });
+  L.marker([HOTEL_LAT, HOTEL_LNG], { icon: hotelIcon })
+    .addTo(map)
+    .bindPopup('<b style="color:#00b4ff;">COMMAND CENTER</b><br>Base of Operations');
+}
+
+function filterMap(type, btn) {
+  currentFilter = type;
+  document.querySelectorAll('.map-filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderMapMarkers();
+}
+
+function locateMe() {
+  if (!navigator.geolocation) { showToast('Geolocation not supported', 'error'); return; }
+  navigator.geolocation.getCurrentPosition(pos => {
+    const { latitude, longitude } = pos.coords;
+    const userIcon = L.divIcon({
+      className: '',
+      html: `<div style="width:16px;height:16px;border-radius:50%;background:#fff;border:3px solid #00b4ff;box-shadow:0 0 10px #00b4ff;"></div>`,
+      iconSize: [16, 16], iconAnchor: [8, 8]
+    });
+    L.marker([latitude, longitude], { icon: userIcon }).addTo(map).bindPopup('<b>Your Location</b>');
+    map.setView([latitude, longitude], 16);
+  }, () => showToast('Location access denied', 'error'));
+}
+
+function renderMapMarkers() {
+  markers.forEach(m => map.removeLayer(m));
+  markers = [];
+
+  let toShow = allIncidents;
+  if (currentFilter === 'critical') toShow = allIncidents.filter(i => i.severity === 'critical');
+  if (currentFilter === 'active') toShow = allIncidents.filter(i => i.status !== 'resolved');
+
+  const listEl = document.getElementById('mapIncidentList');
+  if (currentFilter === 'responders') {
+    listEl.innerHTML = `<div style="padding:12px;color:var(--text-secondary);font-size:12px;font-family:var(--font-mono);">Responder GPS tracking requires mobile app integration.</div>`;
+    return;
+  }
+
+  toShow.forEach((inc, i) => {
+    // Scattering markers around the command center dynamically
+    const lat = HOTEL_LAT + (Math.random() - 0.5) * 0.03;
+    const lng = HOTEL_LNG + (Math.random() - 0.5) * 0.03;
+    const color = SEV_COLORS[inc.severity] || '#00e676';
+    const isPulse = inc.severity === 'critical' && inc.status !== 'resolved';
+    const icon = createMarkerIcon(color, isPulse);
+    const m = L.marker([lat, lng], { icon })
+      .addTo(map)
+      .bindPopup(`
+        <div style="min-width:200px;">
+          <div style="font-weight:700;margin-bottom:6px;color:${color};">${inc.severity.toUpperCase()} — ${inc.type.toUpperCase()}</div>
+          <div style="font-size:13px;margin-bottom:4px;">${inc.title}</div>
+          <div style="font-size:11px;color:#7fa8c8;">📍 ${inc.location}${inc.room_number?' · Rm '+inc.room_number:''}</div>
+          <div style="font-size:11px;color:#7fa8c8;margin-top:4px;">Status: ${inc.status}</div>
+          <a href="incident-detail.html?id=${inc.id}" style="display:block;margin-top:8px;color:#00b4ff;font-size:11px;">View Details →</a>
+        </div>
+      `);
+    markers.push(m);
+  });
+
+  listEl.innerHTML = toShow.length === 0
+    ? `<div style="padding:12px;color:var(--text-dim);font-size:12px;font-family:var(--font-mono);">No incidents to display</div>`
+    : toShow.map(inc => `
+        <div class="map-incident-item" onclick="focusIncident(${inc.id})">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
+            <div style="width:8px;height:8px;border-radius:50%;background:${SEV_COLORS[inc.severity]||'#00e676'};flex-shrink:0;"></div>
+            <span style="font-size:12px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${inc.title}</span>
+          </div>
+          <div style="font-size:10px;color:var(--text-secondary);font-family:var(--font-mono);">📍 ${inc.location} &nbsp;•&nbsp; ${inc.status}</div>
+        </div>
+      `).join('');
+}
+
+async function loadData() {
+  try {
+    allIncidents = await API.incidents.getAll();
+    renderMapMarkers();
+  } catch(e) {
+    document.getElementById('mapIncidentList').innerHTML =
+      `<div style="padding:12px;color:var(--text-secondary);font-size:12px;font-family:var(--font-mono);">Backend offline — showing demo positions</div>`;
+  }
+}
+
+window.addEventListener('load', () => {
+  initMap();
+  loadData();
+  setInterval(loadData, 30000);
+});
+</script>
+</body>
+</html>
